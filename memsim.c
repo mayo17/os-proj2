@@ -4,21 +4,24 @@
 
 void fifo(int nframes, int debug, FILE* file)
     {
-        char filePage[50];
-        char page[nframes][50];
+        char addr[8];
+        char rw;
+        char page[nframes][8];
+        int dirty[nframes];
         int i = 0;
         int j = 0;
         int pos = 0;
         int exists = 0;
         int pageFault = 0;
         int writes = 0;
-        while(fgets(filePage, 50, file) != NULL)
+        while(fscanf(file, "%s %c", &addr, &rw) != EOF)
         {
             if(i < nframes)
             {
+                exists = 0;
                 for(j = 0; j < nframes; j++)
                 {
-                    if(strncmp(page[j], filePage, 8) == 0)
+                    if(strncmp(page[j], addr, 5) == 0)
                     {
                         exists = 1;
                         break;
@@ -30,7 +33,7 @@ void fifo(int nframes, int debug, FILE* file)
                 }
                 if(exists == 0)
                 {
-                    strcpy(page[i], filePage);
+                    strncpy(page[i], addr, 5);
                     i++;
                     pageFault++;
                 }
@@ -39,9 +42,13 @@ void fifo(int nframes, int debug, FILE* file)
             {
                 for(j = 0; j < nframes; j++)
                 {
-                    if(strncmp(page[j], filePage, 8) == 0)
+                    if(strncmp(page[j], addr, 5) == 0)
                     {
                         exists = 1;
+                        if(rw == 'W')
+                        {
+                            dirty[j] = 1;
+                        }
                         break;
                     }
                     else
@@ -52,15 +59,24 @@ void fifo(int nframes, int debug, FILE* file)
                 if(exists == 0)
                 {
                     //If page being replaced had a write instruction increment the writes counter
-                    if(page[nframes-1][9] == 'W')
+                    if(dirty[0] == 1)
                     {
                         writes++;
                     }
                     for(j = 0; j < nframes-1; j++)
                     {
                         strcpy(page[j], page[j+1]);
+                        dirty[j] = dirty[j+1];
                     }
-                    strcpy(page[nframes-1], filePage);
+                    strncpy(page[nframes-1], addr, 5);
+                    if(rw == 'W')
+                    {
+                        dirty[nframes-1] = 1;
+                    }
+                    else
+                    {
+                        dirty[nframes-1] = 0;
+                    }
                     pageFault++;
                 }
             }
@@ -78,7 +94,7 @@ void fifo(int nframes, int debug, FILE* file)
 
         for(i = 0; i < nframes; i++)
         {
-            printf("%s", page[i]);
+            printf("%s\n", page[i]);
         }
         printf("\nNumber of Reads: %d\n", pageFault);
         printf("Number of Writes: %d\n", writes);
@@ -87,24 +103,42 @@ void fifo(int nframes, int debug, FILE* file)
 
     void lru(int nframes, int debug, FILE* file)
     {
-        char page[nframes][50];
-        char filePage[50];
-        int i = 0;
+        char addr[8];
+        char rw;
+        char page[nframes][8];
+        char temp[8];
+        int tempD = 0;
+        int dirty[nframes];
+        int i = nframes-1;
         int j = 0;
+        int k = 0;
         int pos = 0;
         int exists = 0;
         int pageFault = 0;
         int writes = 0;
-        while(fgets(filePage, 50, file) != NULL)
+        while(fscanf(file, "%s %c", &addr, &rw) != EOF)
         {
-            if(i < nframes)
+            if(i >= 0)
             {
+                exists = 0;
                 for(j = 0; j < nframes; j++)
                 {
-                    if(strncmp(page[j], filePage, 8) == 0)
+                    if(strncmp(page[j], addr, 5) == 0)
                     {
                         exists = 1;
-                        pos = j;
+                        if(rw == 'W')
+                        {
+                            dirty[j] = 1;
+                        }
+                        tempD = dirty[j];
+                        for(k = j; k >=0; k--)
+                        {
+                            int temp2 = dirty[k - 1]
+                            strcpy(page[k], page[k-1]);
+                            dirty[k] = temp2;
+                        }
+                        strncpy(page[0], addr, 5);
+                        dirty[0] = tempD;
                         break;
                     }
                     else
@@ -114,8 +148,12 @@ void fifo(int nframes, int debug, FILE* file)
                 }
                 if(exists == 0)
                 {
-                    strcpy(page[i], filePage);
-                    i++;
+                    strncpy(page[i], addr, 5);
+                    if(rw == 'W')
+                    {
+                        dirty[i] = 1;
+                    }
+                    i--;
                     pageFault++;
                 }
             }
@@ -123,9 +161,13 @@ void fifo(int nframes, int debug, FILE* file)
             {
                 for(j = 0; j < nframes; j++)
                 {
-                    if(strncmp(page[j], filePage, 8) == 0)
+                    if(strncmp(page[j], addr, 5) == 0)
                     {
                         exists = 1;
+                        if(rw == 'W')
+                        {
+                            dirty[j] = 1;
+                        }
                         pos = j;
                         break;
                     }
@@ -137,24 +179,38 @@ void fifo(int nframes, int debug, FILE* file)
                 if(exists == 0)
                 {
                     //If page being replaced had a write instruction increment the writes counter
-                    if(page[nframes-1][9] == 'W')
+                    if(dirty[nframes-1] == 1)
                     {
                         writes++;
                     }
-                    for(j = nframes-1; j > 0; j--)
+                    for(j = nframes-1; j >= 0; j--)
                     {
+                        int temp2 = dirty[j-1];
                         strcpy(page[j], page[j-1]);
+                        dirty[j] = temp2;
                     }
-                    strcpy(page[0], filePage);
+                    strncpy(page[0], addr, 5);
+                    if(rw == 'W')
+                    {
+                        dirty[0] = 1;
+                    }
+                    else
+                    {
+                        dirty[0] = 0;
+                    }
                     pageFault++;
                 }
                 else
                 {
-                    for(j = pos; j > 0; j--)
+                    tempD = dirty[pos];
+                    for(j = pos; j >= 0; j--)
                     {
+                        int temp2 = dirty[j-1];
                         strcpy(page[j], page[j-1]);
+                        dirty[j] = temp2;
                     }
-                    strcpy(page[0], filePage);
+                    strncpy(page[0], addr, 5);
+                    dirty[0] = tempD;
                 }
                 
             }
@@ -162,7 +218,7 @@ void fifo(int nframes, int debug, FILE* file)
             {
                 for(i = 0; i < nframes; i++)
                 {
-                printf("%s", page[i]);
+                printf("%s\n", page[i]);
                 }
                 printf("\nNumber of Reads: %d\n", pageFault);
                 printf("Number of Writes: %d\n", writes);
@@ -172,7 +228,7 @@ void fifo(int nframes, int debug, FILE* file)
 
         for(i = 0; i < nframes; i++)
         {
-            printf("%s", page[i]);
+            printf("%s\n", page[i]);
         }
         printf("\nNumber of Reads: %d\n", pageFault);
         printf("Number of Writes: %d\n", writes);
@@ -204,7 +260,7 @@ int main(int argc, char* argv[]) {
         debug = 0;
     }
 
-    printf("This is the string: %s\n", argv[1]);
+    printf("This is the string: %s\n", argv[3]);
     if(strcmp(argv[3], "lru") == 0)
     {
         lru(nframes, debug, file);
