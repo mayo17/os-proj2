@@ -1,23 +1,17 @@
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
-int main() {
-
-    int nframes = 12;
-    char page[nframes][50];
-    char filePage[50];
-    int pos = 0;
-    FILE* file = fopen("sixpack.trace", "r");
-    int i = 0;
-    int j = 0;
-    int debug = 0;
-    //0 = False, 1 = True
-    int exists = 0;
-    int pageFault = 0;
-    int writes = 0;
-
-    void fifo(int nframes)
+void fifo(int nframes, int debug, FILE* file)
     {
+        char filePage[50];
+        char page[nframes][50];
+        int i = 0;
+        int j = 0;
+        int pos = 0;
+        int exists = 0;
+        int pageFault = 0;
+        int writes = 0;
         while(fgets(filePage, 50, file) != NULL)
         {
             if(i < nframes)
@@ -91,8 +85,16 @@ int main() {
 
     }
 
-    void lru(int nframes)
+    void lru(int nframes, int debug, FILE* file)
     {
+        char page[nframes][50];
+        char filePage[50];
+        int i = 0;
+        int j = 0;
+        int pos = 0;
+        int exists = 0;
+        int pageFault = 0;
+        int writes = 0;
         while(fgets(filePage, 50, file) != NULL)
         {
             if(i < nframes)
@@ -177,9 +179,53 @@ int main() {
 
     }
 
-    lru(nframes);
+int main(int argc, char* argv[]) {
+    printf("This is america\n");
+    //argv 1 is the number of frames
+    int nframes = atoi(argv[2]);
+    char page[nframes][50];
+    int pos = 0;
+    //argv 0 is the file name
+    FILE* file = fopen(argv[1], "r");
+    int i = 0;
+    int j = 0;
+    int debug = 0;
+    //0 = False, 1 = True
+    int exists = 0;
+    int pageFault = 0;
+    int writes = 0;
 
-    //fifo(nframes);
+    if(strcmp(argv[4], "debug") == 0)
+    {
+        debug = 1;
+    }
+    else
+    {
+        debug = 0;
+    }
+
+    printf("This is the string: %s\n", argv[1]);
+    if(strcmp(argv[3], "lru") == 0)
+    {
+        lru(nframes, debug, file);
+    }
+    else if(strcmp(argv[3], "fifo") == 0)
+    {
+        fifo(nframes, debug, file);
+    }
+    else if(strcmp(argv[3], "vms") == 0)
+    {
+        //work in progress
+    }
+    else
+    {
+        printf("Invalid algorithm entered.\n");
+    }
+
+    //lru(nframes, debug);
+
+    //fifo(nframes, debug);
 
     return 0;
 }
+
