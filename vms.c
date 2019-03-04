@@ -5,17 +5,11 @@ int main()
 {
 
   int nframes = 12;
-  char page[nframes][50];
-  char filePage[50];
-  int pos = 0;
   File* file = fopen("gcc.trace", "r");
-  int i = 0;
-  int j = 0;
   int debug = 0;
   //0 = False, 1 = True
-  int exists = 0;
   int pageFault = 0;
-  int writes = 0;
+  int writes =  0;
 
   void vms(int nframes, debug)
   {
@@ -23,6 +17,18 @@ int main()
     //Also instantiates counters.
     int rssA = 0;
     int rssB = 0;
+    int diskread = 0;
+    int diskwrite = 0;
+    int exists = 0;
+    int i = 0;
+    int j = 0;
+    int k = 0;
+
+    char addr[8];
+    char rw;
+
+    char pageTemp[5];
+    char pageTemp2[5];
 
     if (nframes%2 == 0) //if nframes is even.
     {
@@ -35,24 +41,30 @@ int main()
     }
 
     //Instantiates working arrays.
-    char fifoA[rssA][50];
-    char fifoB[rssB][50];
-    char clean[nframes/2 + 1][50];
-    char dirty[nframes/2 + 1][50];
-    char page[nframes][50];
+    char fifoA[rssA][5];
+    char fifoB[rssB][5];
+    int fifoAdirt[rssA] = 0;
+    int fifoBdirt[rssB] = 0;
+    char clean[nframes/2 + 1][5];
+    char dirty[nframes/2 + 1][5];
+    char page[nframes][5];
 
-    while (fgets(filePage, 50, file) != NULL)
+    while (fscanf(file, "%s %c", &addr, &rw) == 1)
     {
-      if (filePage[0] == '3')
+      if (addr[0] == '3') //If the first number of the trace is 3...
       {
+        //For initially filling the page tables.
         if (i < rssA)
         {
-          for (j = 0; j < rssA; j++)
+          for (j = 0; j < rssA; j++) //Loops through fifoA
           {
-            if (strncmp(fifoA[j], filePage, 8) == 0)
+            if (strncmp(fifoA[j], addr, 5) == 0)
             {
               exists = 1;
-              break;
+              if (rw == 'W') { //Checks if the page needs to be marked dirty.
+                fifoAdirt[j] = 1;
+              }
+              break; //consider removal
             }else
             {
               exists = 0;
@@ -60,8 +72,11 @@ int main()
           }
           if (exists == 0)
           {
-
-            strcpy(fifoA[i], filePage);
+            strncpy(fifoA[i], addr, 5);
+            if (rw = 'W')
+            {
+              fifoAdirt[i] = 1;
+            }
             i++;
             pageFault++;
           }
@@ -69,59 +84,37 @@ int main()
         {
           for (j = 0; j < rssA; j++)
           {
-            if(strncmp(fifoA[j], filePage, 8) == 0)
+            if(strncmp(fifoA[j], addr, 5) == 0)
             {
                 exists = 1;
+                if (rw == 'W') { //Checks if the page needs to be marked dirty.
+                  fifoAdirt[j] = 1;
+                }
                 break;
             }
             else
             {
                 exists = 0;
             }
+            if (exists == 0) {
+              //Removes page and adds to dirty or clean.
+              if (fifoAdirt[0] == 1) {
+                for (k = 0; dirty[k] != NULL; k++);
+                strcpy(dirty[k], fifoA[0]);
+              }else {
+                for (int k = 0; clean[k] != NULL; k++);
+                strcpy(clean[k], fifoA[0]);
+              }
+
+            }
+
           }
         }
-      }else
+      }else //For the other process.
       {
-        if (filePage[0] == '3')
-        {
-          if (i < rssA)
-          {
-            for (j = 0; j < rssA; j++)
-            {
-              if (strncmp(fifoA[j], filePage, 8) == 0)
-              {
-                exists = 1;
-                break;
-              }else
-              {
-                exists = 0;
-              }
-            }
-            if (exists == 0)
-            {
-              strcpy(fifoA[i], filePage);
-              i++;
-              pageFault++;
-            }
-          }else
-          {
-            for (j = 0; j < rssA; j++)
-            {
-              if(strncmp(fifoA[j], filePage, 8) == 0)
-              {
-                  exists = 1;
-                  break;
-              }
-              else
-              {
-                  exists = 0;
-              }
-            }
-          }
+
       }
     }
   }
-
-
 
 }
