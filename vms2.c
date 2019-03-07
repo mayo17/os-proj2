@@ -6,7 +6,7 @@ int main(){
 
   int nframes = 12;
   FILE* file = fopen("gcc.trace", "r");
-  int debug = 1;
+  int debug = 0;
   //0 = False, 1 = True
   int pageFault = 0;
   int writes =  0;
@@ -40,7 +40,7 @@ int main(){
     char dirty[nframes/2 + 1][5];
     char page[nframes][5];
 
-    while (fscanf(file, "%s %c", &addr, &rw) == 1) {
+    while (fscanf(file, "%s %c", &addr, &rw) != EOF) {
       count++;
       if (addr[0] == '3')
       {
