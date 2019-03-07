@@ -99,8 +99,9 @@ void fifo(int nframes, int debug, FILE* file)
         {
             printf("%s\n", page[i]);
         }
-        printf("Number of events in the trace: %d", count);
-        printf("\nNumber of disk Reads: %d\n", pageFault);
+	printf("Number of frames: %d\n", nframes);
+        printf("Number of events in the trace: %d\n", count);
+        printf("Number of disk Reads: %d\n", pageFault);
         printf("Number of disk Writes: %d\n", writes);
 
     }
@@ -193,10 +194,16 @@ void fifo(int nframes, int debug, FILE* file)
         {
             printf("%s\n", page[i]);
         }
+	printf("Number of frames: %d\n", nframes);
         printf("Number of events in the trace: %d\n", count);
-        printf("\nNumber of disk Reads: %d\n", pageFault);
+        printf("Number of disk Reads: %d\n", pageFault);
         printf("Number of disk Writes: %d\n", writes);
 
+    }
+
+    void vms(int nframes, int debug, FILE* file)
+    {
+        
     }
 
 int main(int argc, char* argv[]) {
@@ -233,7 +240,7 @@ int main(int argc, char* argv[]) {
     }
     else if(strcmp(argv[3], "vms") == 0)
     {
-        //work in progress
+        vms(nframes, debug, file);
     }
     else
     {
